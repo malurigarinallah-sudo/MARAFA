@@ -1,1 +1,1 @@
-
+sed -i 's#<application#<uses-permission android:name="android.permission.SET_WALLPAPER" />\n    <queries><intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent></queries>\n    <application#; s#</activity>#<intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.HOME" /><category android:name="android.intent.category.DEFAULT" /></intent-filter></activity>#' android/app/src/main/AndroidManifest.xml

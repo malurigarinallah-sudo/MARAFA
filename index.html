@@ -193,7 +193,11 @@ const b64=it=>IMD[ITEMS.indexOf(it)].split(',')[1];
 async function applyWall(label){const it=LST[cur];if(!it||!it.src)return toast('This slot has no image yet.');
  const which=label.indexOf('Home and')===0?'both':label.indexOf('Home')===0?'home':'lock';
  if(!nat())return toast('Browser preview only. Install the APK to set the real wallpaper.');
- try{await ncall('setWallpaper',{image:b64(it),which});toast(label+' wallpaper set.')}catch(e){toast('Could not set wallpaper: '+((e&&e.message)||e))}}
+ try{const r=await ncall('setWallpaper',{image:b64(it),which});
+  if(which==='both')toast(r.home&&r.lock?'Home and lock screen wallpaper set. Lock your phone to check.':r.home?'Home screen set. Lock screen wallpaper was not accepted on this phone.':'Could not set wallpaper on this phone.');
+  else if(which==='home')toast(r.home?'Home screen wallpaper set.':'Could not set the home screen wallpaper.');
+  else toast(r.lock?'Lock screen wallpaper set. Lock your phone to check.':'This phone did not accept a lock screen wallpaper (some phones use their own lock screen app).')
+ }catch(e){toast('Could not set wallpaper: '+((e&&e.message)||e))}}
 async function share(i){const it=LST[i];if(!it.src)return toast('This slot has no image yet.');
  if(nat()){try{await ncall('shareImage',{image:b64(it)})}catch(e){toast('Could not share this image.')}return}
  try{const b=await (await fetch(it.src)).blob(),f=new File([b],'musa-yusuf.jpg',{type:'image/jpeg'});
@@ -239,6 +243,13 @@ $('#lws').innerHTML=ITEMS.map((it,i)=>`<img src="${it.src}" alt="${it.name}" dat
 window.addEventListener('musahome',()=>{go('launcher');launcher();$('#dr').classList.remove('on')});
 setInterval(()=>{if(document.body.classList.contains('lm'))tick()},30000);
 if(nat())ncall('isHome',{}).then(r=>{if(r&&r.home){go('launcher');launcher()}}).catch(()=>{});
+if(nat()&&window.Capacitor.Plugins.App){try{window.Capacitor.Plugins.App.addListener('backButton',()=>{
+ if($('#vw').classList.contains('on')){$('#vw').classList.remove('on');return}
+ if($('#sh').classList.contains('on')){$('#sh').classList.remove('on');return}
+ if($('#dr').classList.contains('on')){$('#dr').classList.remove('on');return}
+ if(document.body.classList.contains('lm')){window.Capacitor.Plugins.App.minimizeApp();return}
+ go('launcher');launcher()
+})}catch(e){}}
 $('.hero img').src=IM[0];$('#ab').src=IM[1];$$('.lg').forEach(e=>e.src=LG);{const d=blobURL(DEVD);$$('.dv').forEach(e=>e.src=d)}
 build();applyTheme(store.get('myt-theme')||'mix');
 if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0&&!nat())navigator.serviceWorker.register('sw.js').catch(()=>{});

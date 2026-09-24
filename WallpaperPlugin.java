@@ -41,13 +41,35 @@ public class WallpaperPlugin extends Plugin {
         try {
             byte[] b = imageBytes(call);
             if (b == null) { call.reject("No image"); return; }
-            Bitmap bm = BitmapFactory.decodeByteArray(b, 0, b.length);
+            BitmapFactory.Options opt = new BitmapFactory.Options();
+            opt.inJustDecodeBounds = true;
+            BitmapFactory.decodeByteArray(b, 0, b.length, opt);
+            int sample = 1;
+            int maxDim = Math.max(opt.outWidth, opt.outHeight);
+            while (maxDim / sample > 1600) sample *= 2;
+            opt.inSampleSize = sample;
+            opt.inJustDecodeBounds = false;
+            Bitmap bm = BitmapFactory.decodeByteArray(b, 0, b.length, opt);
+            if (bm == null) { call.reject("Could not read image"); return; }
             String which = call.getString("which", "both");
-            int flag = WallpaperManager.FLAG_SYSTEM | WallpaperManager.FLAG_LOCK;
-            if ("home".equals(which)) flag = WallpaperManager.FLAG_SYSTEM;
-            else if ("lock".equals(which)) flag = WallpaperManager.FLAG_LOCK;
-            WallpaperManager.getInstance(getContext()).setBitmap(bm, null, true, flag);
-            call.resolve();
+            WallpaperManager wm = WallpaperManager.getInstance(getContext());
+            boolean okHome = true, okLock = true;
+            if (!"lock".equals(which)) {
+                try { wm.setBitmap(bm, null, true, WallpaperManager.FLAG_SYSTEM); }
+                catch (Exception e) { okHome = false; }
+            }
+            if (!"home".equals(which)) {
+                if (Build.VERSION.SDK_INT >= 24) {
+                    try { wm.setBitmap(bm, null, true, WallpaperManager.FLAG_LOCK); }
+                    catch (Exception e) { okLock = false; }
+                } else {
+                    okLock = false;
+                }
+            }
+            JSObject r = new JSObject();
+            r.put("home", okHome);
+            r.put("lock", okLock);
+            call.resolve(r);
         } catch (Exception e) {
             call.reject(String.valueOf(e.getMessage()));
         }
